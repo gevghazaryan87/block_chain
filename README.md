@@ -56,5 +56,24 @@ python3 app.py
 ```
 Navigate to `http://127.0.0.1:5000` to start exploring.
 
-## 📄 License
+## � Docker Setup
+
+If you prefer using Docker, you can spin up the entire stack (PostgreSQL + App + Ingester) with a single command:
+
+### 1. Start everything
+```bash
+docker-compose up --build
+```
+This will:
+- Initialize the PostgreSQL database.
+- Run the schema setup (`dbSetup.py`) automatically.
+- Start the ingestion process (`dataFetch.py`) to sync blocks.
+- Launch the web explorer at `http://localhost:5000`.
+
+### 2. Common Commands
+- **Stop services**: `docker-compose down`
+- **View logs**: `docker-compose logs -f`
+- **Reset database**: `docker-compose down -v` (removes the persistent volume)
+
+## �📄 License
 MIT

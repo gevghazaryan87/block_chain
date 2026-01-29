@@ -1,10 +1,22 @@
+import time
 import hashlib
 import psycopg2
+from psycopg2.extras import Json
 from datetime import datetime
 from config import DB_CONFIG
 
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
+def get_db_connection(retries=5, delay=2):
+    """Attempt to connect to the database with retries."""
+    for i in range(retries):
+        try:
+            return psycopg2.connect(**DB_CONFIG)
+        except psycopg2.OperationalError as e:
+            if i < retries - 1:
+                print(f"⚠️ Database connection failed. Retrying in {delay} seconds... ({i+1}/{retries})")
+                time.sleep(delay)
+            else:
+                print(f"❌ Could not connect to the database after {retries} attempts.")
+                raise e
 
 def is_block_fully_synced(block_hash, total_txs):
     conn = get_db_connection()
@@ -57,11 +69,11 @@ def insert_transaction_batch(transactions, block_hash, base_index=0):
 
             cur.execute("""
                 INSERT INTO bitcoin_transactions (
-                    txid, block_hash, block_height, tx_index, version, locktime, is_coinbase
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (txid) DO NOTHING
+                    txid, block_hash, block_height, tx_index, version, locktime, witnesses, is_coinbase
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (txid) DO NOTHING
             """, (
                 tx['txid'], block_hash, status.get('block_height'), tx_index,
-                tx.get('version'), tx.get('locktime'), is_coinbase
+                tx.get('version'), tx.get('locktime'), Json(tx.get('witness')), is_coinbase
             ))
 
 
@@ -93,14 +105,6 @@ def insert_transaction_batch(transactions, block_hash, base_index=0):
                     vin.get('sequence'), vin.get('is_coinbase', False)
                 ))
 
-                # 4. Store Witness Data (if present)
-                witness_items = vin.get('witness', [])
-                for witness_idx, witness_data in enumerate(witness_items):
-                    cur.execute("""
-                        INSERT INTO bitcoin_witnesses (
-                            txid, input_index, witness_index, witness_data
-                        ) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING
-                    """, (tx['txid'], n, witness_idx, witness_data))
 
         conn.commit()
 

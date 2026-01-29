@@ -9,3 +9,4 @@ ENV/
 .idea/
 .vscode/
 *.sqlite3
+txs_time.csv

@@ -20,9 +20,9 @@ def setup_database():
         cur.execute("DROP TABLE IF EXISTS bitcoin_blocks CASCADE;")
         
         # 1. Blocks Table (Level 1)
-        print("Creating table: bitcoin_blocks")
+        print("Creating table: bitcoin_blocks...")
         cur.execute("""
-            CREATE TABLE bitcoin_blocks (
+            CREATE TABLE IF NOT EXISTS bitcoin_blocks (
                 block_hash VARCHAR(64) PRIMARY KEY,
                 previous_block_hash VARCHAR(64),
                 height INTEGER UNIQUE NOT NULL,
@@ -33,27 +33,30 @@ def setup_database():
                 nonce BIGINT
             );
         """)
+        print("✅ Table bitcoin_blocks created or exists.")
         
         # 2. Transactions Table (Level 2)
-        print("Creating table: bitcoin_transactions")
+        print("Creating table: bitcoin_transactions...")
         cur.execute("""
-            CREATE TABLE bitcoin_transactions (
+            CREATE TABLE IF NOT EXISTS bitcoin_transactions (
                 txid VARCHAR(64) PRIMARY KEY,
                 block_hash VARCHAR(64) REFERENCES bitcoin_blocks(block_hash) ON DELETE CASCADE,
                 block_height INTEGER,
                 tx_index INTEGER,
                 version INTEGER,
                 locktime BIGINT,
+                witnesses JSONB,
                 is_coinbase BOOLEAN
             );
         """)
+        print("✅ Table bitcoin_transactions created or exists.")
 
 
 
         # 3. Outputs Table (Detail of Transaction - "Money Created")
-        print("Creating table: bitcoin_outputs")
+        print("Creating table: bitcoin_outputs...")
         cur.execute("""
-            CREATE TABLE bitcoin_outputs (
+            CREATE TABLE IF NOT EXISTS bitcoin_outputs (
                 txid VARCHAR(64) REFERENCES bitcoin_transactions(txid) ON DELETE CASCADE,
                 output_index INTEGER,
                 value BIGINT,
@@ -64,12 +67,13 @@ def setup_database():
                 PRIMARY KEY (txid, output_index)
             );
         """)
+        print("✅ Table bitcoin_outputs created or exists.")
 
 
         # 4. Inputs Table (Detail of Transaction - "Money Spent")
-        print("Creating table: bitcoin_inputs")
+        print("Creating table: bitcoin_inputs...")
         cur.execute("""
-            CREATE TABLE bitcoin_inputs (
+            CREATE TABLE IF NOT EXISTS bitcoin_inputs (
                 txid VARCHAR(64) REFERENCES bitcoin_transactions(txid) ON DELETE CASCADE,
                 input_index INTEGER,
                 prev_txid VARCHAR(64),
@@ -77,26 +81,15 @@ def setup_database():
                 script_sig TEXT,
                 script_sig_asm TEXT,
                 sequence BIGINT,
+                witnesses JSONB,
                 is_coinbase BOOLEAN,
                 PRIMARY KEY (txid, input_index)
             );
         """)
-
-        # 5. Witnesses Table (SegWit witness data)
-        print("Creating table: bitcoin_witnesses")
-        cur.execute("""
-            CREATE TABLE bitcoin_witnesses (
-                txid VARCHAR(64),
-                input_index INTEGER,
-                witness_index INTEGER,
-                witness_data TEXT,
-                PRIMARY KEY (txid, input_index, witness_index),
-                FOREIGN KEY (txid, input_index) REFERENCES bitcoin_inputs(txid, input_index) ON DELETE CASCADE
-            );
-        """)
+        print("✅ Table bitcoin_inputs created or exists.")
 
         # 6. Aggregated View
-        print("Creating view: block_stats_view")
+        print("Creating view: block_stats_view...")
         cur.execute("""
             CREATE OR REPLACE VIEW block_stats_view AS
             SELECT 
@@ -115,6 +108,7 @@ def setup_database():
             GROUP BY 
                 b.height, b.block_hash, b.timestamp;
         """)
+        print("✅ View block_stats_view created or updated.")
         
         conn.commit()
         cur.close()
@@ -122,6 +116,8 @@ def setup_database():
         print("✅ Full Relational Blockchain Schema is ready!")
     except Exception as e:
         print(f"❌ Database setup failed: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     setup_database()

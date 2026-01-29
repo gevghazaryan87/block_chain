@@ -1,5 +1,6 @@
 from flask import Flask, render_template, abort
 import psycopg2
+import os
 from psycopg2.extras import RealDictCursor
 from config import DB_CONFIG
 
@@ -83,4 +84,5 @@ def transaction_details(txid):
         return str(e), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.getenv("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
