@@ -10,3 +10,5 @@ ENV/
 .vscode/
 *.sqlite3
 txs_time.csv
+Task.md
+show_stats.py

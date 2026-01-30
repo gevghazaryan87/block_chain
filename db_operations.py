@@ -69,11 +69,11 @@ def insert_transaction_batch(transactions, block_hash, base_index=0):
 
             cur.execute("""
                 INSERT INTO bitcoin_transactions (
-                    txid, block_hash, block_height, tx_index, version, locktime, witnesses, is_coinbase
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (txid) DO NOTHING
+                    txid, block_hash, block_height, tx_index, version, locktime, is_coinbase
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (txid) DO NOTHING
             """, (
                 tx['txid'], block_hash, status.get('block_height'), tx_index,
-                tx.get('version'), tx.get('locktime'), Json(tx.get('witness')), is_coinbase
+                tx.get('version'), tx.get('locktime'), is_coinbase
             ))
 
 
@@ -105,6 +105,16 @@ def insert_transaction_batch(transactions, block_hash, base_index=0):
                     vin.get('sequence'), vin.get('is_coinbase', False)
                 ))
 
+                witnesses = vin.get('witness', [])
+                
+                for w_index, w_data in enumerate(witnesses):
+                    cur.execute("""
+                        INSERT INTO bitcoin_witnesses (
+                            txid, input_index, witness_index, witness
+                        ) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING
+                    """, (
+                        tx['txid'], n, w_index, w_data
+                    ))  
 
         conn.commit()
 

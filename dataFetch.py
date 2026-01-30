@@ -107,7 +107,7 @@ def main():
     
     if blocks:
         # Filter to only process the last block (or change this to process more)
-        blocks_to_process = blocks
+        blocks_to_process = blocks[0:2]
         total_blocks = len(blocks_to_process)
         
         print(f"📊 Found {total_blocks} block(s) to index\n")
@@ -124,7 +124,7 @@ def main():
         
         for block in blocks_to_process:
             block_pbar.set_description(f"Processing Block #{block['height']}")
-            measure_txs_time(block, 1)
+            sync_full_block(block)
             block_pbar.update(1)
             # Short rest between blocks
             time.sleep(2)

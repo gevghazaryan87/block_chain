@@ -107,7 +107,7 @@ def main():
     
     if blocks:
         # Filter to only process the last block (or change this to process more)
-        blocks_to_process = blocks
+        blocks_to_process = blocks[0:3]
         total_blocks = len(blocks_to_process)
         
         print(f"📊 Found {total_blocks} block(s) to index\n")

@@ -109,6 +109,23 @@ def setup_database():
                 b.height, b.block_hash, b.timestamp;
         """)
         print("✅ View block_stats_view created or updated.")
+
+        print("Creating witness table...")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS bitcoin_witnesses (
+                txid VARCHAR(64) NOT NULL,
+                input_index INTEGER NOT NULL,
+                witness_index INTEGER NOT NULL,
+                witness TEXT NOT NULL,
+                PRIMARY KEY (txid, input_index, witness_index),
+                FOREIGN KEY (txid, input_index) 
+                    REFERENCES bitcoin_inputs(txid, input_index) 
+                    ON DELETE CASCADE
+            );
+        """)
+        print("✅ Table bitcoin_witnesses created or exists.    ")
+
+
         
         conn.commit()
         cur.close()
